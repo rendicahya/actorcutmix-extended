@@ -1,0 +1,125 @@
+import sys
+
+sys.path.append(".")
+
+import pickle
+from pathlib import Path
+
+import mmcv
+import numpy as np
+import rich_click as click
+from assertpy.assertpy import assert_that
+from config import settings as conf
+from moviepy import ImageSequenceClip
+from rich.progress import Progress
+from tqdm import tqdm
+from ultralytics import YOLO
+
+root = Path.cwd()
+dataset = conf.active.dataset
+detector = conf.active.detector
+det_confidence = conf.detection.confidence
+ext = conf.datasets[dataset].ext
+video_in_dir = root / conf.datasets[dataset].path
+generate_video = conf.detection.generate_video
+checkpoint = root/f"yolo/checkpoints/{detector}.pt"
+mask_out_dir = root / f"data/{dataset}/{detector}/detect/mask"
+dump_out_dir = root / f"data/{dataset}/{detector}/detect/dump"
+video_out_dir = root / f"data/{dataset}/{detector}/detect/video"
+
+print("Checkpoint:", checkpoint)
+print("Input:", video_in_dir.relative_to(root))
+print("Output mask:", mask_out_dir.relative_to(root))
+print("Output dump:", dump_out_dir.relative_to(root))
+
+if generate_video:
+    print("Output video:", video_out_dir.relative_to(root))
+
+assert_that(video_in_dir).is_directory().is_readable()
+
+if not click.confirm("\nDo you want to continue?", show_default=True):
+    exit("Aborted.")
+    
+model=YOLO(checkpoint)
+
+progress = Progress()
+progress.start()
+yolo_task = progress.add_task("Working...", total=conf.datasets[dataset].n_videos)
+
+for file in video_in_dir.glob(f"**/*{ext}"):
+    action = file.parent.name
+    mask_out_path = mask_out_dir / action / file.stem
+    dump_out_path = dump_out_dir / action / file.with_suffix(".pckl").name
+
+    if mask_out_path.exists() and mask_out_path.stat().st_size:
+        progress.update(yolo_task, advance=1)
+        continue
+
+    if generate_video:
+        output_frames = []
+
+    det_results = model(
+        file, stream=True, conf=det_confidence, device="cuda:0", verbose=False
+    )
+    video = mmcv.VideoReader(str(file))
+    n_frames = video.frame_cnt
+    mask_cube = np.zeros((n_frames, video.height, video.width), np.uint8)
+    dump_data = {}
+
+    for i, result in enumerate(det_results):
+        boxes = np.rint(result.boxes.xywh.cpu().numpy()).astype(int)
+        classes = result.boxes.cls
+        confidences = result.boxes.conf
+        frame_id = "%06d" % int(i)
+        frame_dump = []
+
+        for cls, confidence, (x, y, w, h) in zip(classes, confidences, boxes):
+            if cls != 0:  # Only process human class
+                continue
+
+            half_w = w // 2
+            half_h = h // 2
+
+            x1 = x - half_w
+            y1 = y - half_h
+            x2 = x + half_w
+            y2 = y + half_h
+
+            mask_cube[int(i), y1:y2, x1:x2] = 255
+
+            frame_dump.append(
+                {
+                    "image_id": frame_id,
+                    "bbox": [x1, y1, w, h],
+                    "scores": confidence,
+                    "bbox_center": [x, y],
+                }
+            )
+
+        dump_data[frame_id] = frame_dump
+
+        if generate_video:
+            frame = result.plot()[..., ::-1]
+
+            output_frames.append(frame)
+
+    mask_out_path.parent.mkdir(parents=True, exist_ok=True)
+    dump_out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    np.savez_compressed(mask_out_path, mask_cube)
+
+    with open(dump_out_path, "wb") as f:
+        pickle.dump((file.name, dump_data), f)
+
+    if generate_video:
+        video_out_path = video_out_dir / action / file.with_suffix(".mp4").name
+        fps = video.fps
+
+        video_out_path.parent.mkdir(parents=True, exist_ok=True)
+        ImageSequenceClip(output_frames, fps=fps).write_videofile(
+            str(video_out_path), logger=None
+        )
+
+    progress.update(yolo_task, advance=1)
+
+progress.stop()
