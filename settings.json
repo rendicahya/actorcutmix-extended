@@ -1,0 +1,31 @@
+{
+  "active": {
+    "dataset": "ucf101",
+    "detector": "yolov8x",
+    "random_seed": 0
+  },
+  "datasets": {
+    "ucf101": {
+      "path": "data/ucf101/videos",
+      "ext": ".avi",
+      "n_videos": 13320,
+      "n_classes": 101
+    },
+    "hmdb51": {
+      "path": "data/hmdb51/videos",
+      "ext": ".avi",
+      "n_videos": 6766,
+      "n_classes": 51
+    },
+    "kinetics100": {
+      "path": "data/kinetics100/videos",
+      "ext": ".mp4",
+      "n_videos": 9999,
+      "n_classes": 100
+    }
+  },
+  "detection": {
+    "generate_video": false,
+    "confidence": 0.25
+  }
+}
