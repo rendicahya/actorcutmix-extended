@@ -20,12 +20,12 @@ dataset = conf.active.dataset
 detector = conf.active.detector
 det_confidence = conf.detection.confidence
 ext = conf.datasets[dataset].ext
-video_in_dir = root / conf.datasets[dataset].path
+video_in_dir = root / 'data'/dataset/'videos'
 generate_video = conf.detection.generate_video
 checkpoint = root/f"yolo/checkpoints/{detector}.pt"
-mask_out_dir = root / f"data/{dataset}/{detector}/detect/mask"
-dump_out_dir = root / f"data/{dataset}/{detector}/detect/dump"
-video_out_dir = root / f"data/{dataset}/{detector}/detect/video"
+mask_out_dir = root / "data" / dataset / detector / "detect/mask"
+dump_out_dir = root / "data" / dataset / detector / "detect/dump"
+video_out_dir = root / "data" / dataset / detector / "detect/video"
 
 print("Checkpoint:", checkpoint)
 print("Input:", video_in_dir.relative_to(root))
@@ -40,8 +40,7 @@ assert_that(video_in_dir).is_directory().is_readable()
 if not click.confirm("\nDo you want to continue?", show_default=True):
     exit("Aborted.")
     
-model=YOLO(checkpoint)
-
+model = YOLO(checkpoint)
 progress = Progress()
 progress.start()
 yolo_task = progress.add_task("Working...", total=conf.datasets[dataset].n_videos)
