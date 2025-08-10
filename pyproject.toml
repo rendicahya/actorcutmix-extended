@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Exploratory study on enhancing ActorCutMix for video augmentation"
 authors = ["Randy Cahya Wihandika <rendicahya@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,11 +16,9 @@ rich = "^14.1.0"
 tomli = "^2.2.1"
 platformdirs = "^4.3.8"
 moviepy = "^2.2.1"
-numpy = "1.26.4"
 torch = {version = "1.13.1+cu116", source = "pytorch-cu116"}
 torchvision = {version = "0.14.1+cu116", source = "pytorch-cu116"}
-opencv-python = "4.11.0.86"
-opencv-contrib-python = "4.11.0.86"
+numpy = "<2"
 
 [[tool.poetry.source]]
 name = "pytorch-cu116"
