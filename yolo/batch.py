@@ -31,8 +31,8 @@ def main():
 
     print("Checkpoint:", checkpoint)
     print("Input:", video_in_dir.relative_to(root))
-    print("Output mask:", mask_out_dir.relative_to(root))
-    print("Output dump:", dump_out_dir.relative_to(root))
+    print("Output mask:", mask_out_dir.relative_to(root), '(exist)' if mask_out_dir.exists() else '(not exist)')
+    print("Output dump:", dump_out_dir.relative_to(root), 'exist' if dump_out_dir.exists() else '(not exist)')
 
     if generate_video:
         print("Output video:", video_out_dir.relative_to(root))
