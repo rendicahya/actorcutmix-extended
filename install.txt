@@ -1,0 +1,6 @@
+conda create -n acm-x python=3.10
+conda activate acm-x
+pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
+pip install ultralytics openmim
+mim install mmcv
+pip install rich-click moviepy dynaconf numpy==1.26.4 opencv-python==4.11.0.86
